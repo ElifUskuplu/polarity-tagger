@@ -694,17 +694,10 @@ function Enrich(N, repair){
   }
 
   if(N.rule==='Neg'){
-    // two children: the negator, and the constituent it negates. The schema
-    // x ->- x̄ is instantiated at the argument's type sigma, which must be
-    // Boolean (t, or a function type whose final result is t). The Boolean
-    // complement is pointwise, so the negated function is antitone wherever
-    // the original is monotone: the result type is sigma with every marking
-    // along its result spine inverted (the argument types are unchanged).
-    // The result is an ordinary application, so polarization needs no
-    // separate case.
+    // two children: the negator, and the constituent it negates. x ->- x̄ is
+    // instantiated at the argument's type, which must be Boolean (negateTy).
     let a=Enrich(N.children[1],repair);
-    // ML (structural): e has no complement, so a bare individual is first
-    // lifted to np+, as in coordination.
+    // ML: e has no complement, so a bare individual is lifted to np+ first
     if(isETy(a.ty)) a={kind:'ML', ty:NP_PLUS, children:[a]};
     const sigma=a.ty;
     if(!isConjoinableTy(sigma)){
@@ -1201,30 +1194,8 @@ function ccgCoord(picks){
 }
 
 /* negation is a binary step: the not card, then the constituent it negates.
-   The category is the argument's own (not acts as X/X); the type is fixed in
-   Enrich, where x in x ->- x̄ is instantiated at the argument's type. The
-   constituents not may negate: a verb phrase, a transitive verb, a noun
-   phrase, a determiner, and the three copula complements: a predicative
-   adjective phrase (S[adj]\NP), a progressive phrase (S[ng]\NP) and a
-   passive phrase (S[pss]\NP), so that Fido is not hungry, Fido is not
-   sleeping and Fido was not chased parse. English has no bare not over a
-   whole clause, so S is not a target. Three further conditions keep the
-   derivations in a normal form; all three are stipulations of this tagger,
-   not consequences of Eisner's (1996) conditions, which concern composition
-   and raising only.
-   (a) A negated transitive verb exists for the sake of object extraction
-   (every cat who Fido did not chase ran). It is flagged nfAsB and then
-   handled like the output of a composition: it cannot be the primary functor
-   of a forward application or composition, and a coordination of flagged
-   conjuncts inherits the flag. So Fido did not chase a cat gets only the
-   verb-phrase negation. The flag does not reach right-node raising, where
-   the composition is forced anyway: Fido did not chase and Felix chased a
-   cat gets the object above the negation (cat up), as it should.
-   (b) not does not attach to a noun phrase built by a determiner: the same
-   reading comes from negating the determiner ([not every] student rather
-   than not [every student]), and keeping both only doubles the derivations.
-   (c) A negated bare name (not Felix) is licensed only as a conjunct (Fido
-   and not Felix); parseForest filters the others and reports it. */
+   The category is the argument's own (not acts as X/X); the type is set in
+   Enrich. S is not a target: English has no bare not over a whole clause. */
 const NEG_TARGETS=['S\\NP','(S\\NP)/NP','NP','NP/N','S[adj]\\NP','S[ng]\\NP','S[pss]\\NP'];
 const TV_CAT='(S\\NP)/NP';
 function ccgNeg(picks){
@@ -1234,12 +1205,15 @@ function ccgNeg(picks){
   if(!NEG_TARGETS.some(c=>catEq(parseCat(right.cat),parseCat(c))))
     throw new Error('not negates a verb phrase, a transitive verb, a noun phrase, a determiner, or an adjective, progressive or passive phrase; got '+right.cat);
   if(isRaised(right)) throw new Error('not cannot negate a type-raised constituent');
+  // [not every] student, never not [every student]: one reading, not two
   if(right.kind==='App>' && catEq(parseCat(right.children[0].cat),parseCat('NP/N')))
     throw new Error('not attaches to the determiner, not to the noun phrase it builds');
   const span=[neg.span[0], right.span[1]];
+  // a negated transitive verb (for object extraction) counts as a composition output
   const asB=catEq(parseCat(right.cat),parseCat(TV_CAT));
   return {rule:'Neg', cat:right.cat, children:[neg,right], span, kind:'Neg', nfAsB:asB};
 }
+// a negated bare name (not Felix) is licensed only as a conjunct (Fido and not Felix)
 function negatesBareName(n){
   if(n.kind!=='Neg') return false;
   const a=n.children[1];
