@@ -1,6 +1,6 @@
 # Polarity Tagger
 
-A browser-based polarity tagger for CCG and the material of its evaluation on the MED dataset (787 premise–hypothesis pairs, 447 premises). The tagger runs at <https://elifuskuplu.github.io/polarity-tagger/>; the other files report the MED comparison.
+A browser-based polarity tagger for CCG and the material of its evaluation on the MED dataset (787 premise–hypothesis pairs, 447 premises).
 
 - `index.html` — the tagger with the reduced lexicon (the published page).
 - `polarity_tagger_full.html` — the tagger with the larger lexicon that covers the MED premises.
